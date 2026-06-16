@@ -1,0 +1,12 @@
+output/
+results/
+*.jsonl
+__pycache__/
+*.pyc
+.venv/
+venv/
+~/.cache/
+.cache/
+hf_cache/
+*.safetensors
+.DS_Store

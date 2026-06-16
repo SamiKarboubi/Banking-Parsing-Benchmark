@@ -1,0 +1,21 @@
+# vLLM >= 0.10.1 est requis : Qwen3 (>=0.8.4), Gemma3 et SmolLM3 (backend transformers,
+# ajouté en 0.10.x) ne sont PAS supportés par les versions plus anciennes.
+# On laisse vLLM résoudre lui-même torch / xgrammar (ne PAS les épingler à la main).
+vllm>=0.10.1,<0.12
+
+# SmolLM3 nécessite transformers >= 4.53 ; Gemma3/Qwen3 sont aussi couverts.
+transformers>=4.53
+
+pydantic>=2.6,<3
+pandas>=2.2
+numpy>=1.26
+
+# Dépendances modèles
+accelerate>=1.0          # device_map="auto" (NuExtract)
+sentencepiece>=0.2       # tokenizers Mistral / Gemma
+pillow>=10.0             # processors multimodaux (Gemma3, NuExtract/Qwen2-VL)
+timm>=1.0.17             # tour vision Gemma3
+mistral_common>=1.5      # tokenizer Mistral / Ministral
+
+# Baseline NER
+gliner>=0.2.13           # urchade/gliner_multi-v2.1
