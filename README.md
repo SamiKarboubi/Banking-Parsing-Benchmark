@@ -101,25 +101,28 @@ zip -r resultats.zip output results
 # puis téléchargement via l'onglet "Files" de RunPod (ou: runpodctl send resultats.zip)
 ```
 
-**Stockage du container (disque) : prévoir ≥ 150 Go** (≈ 200 Go confortable).
-Poids des modèles en bf16 (~2 octets/param) : Mistral-Small-24B ≈ 48 Go, Ministral-8B ≈ 16 Go,
-Qwen3-4B / Gemma3-4B / Phi-4-mini ≈ 8 Go chacun, SmolLM3-3B ≈ 6 Go, NuExtract-2B ≈ 4 Go,
-Qwen3-1.7B ≈ 3,5 Go, Qwen3-0.6B ≈ 1,2 Go, GLiNER ≈ 0,5 Go → **~105 Go de poids**,
-+ cache HF, + environnement (torch/vLLM/CUDA ~15 Go).
+**Stockage du container (disque) : prévoir ≥ 200 Go** (10 LLM + 2 baselines).
+Poids des modèles en bf16 (~2 octets/param) : Mistral-Small-24B ≈ 48 Go, Gemma3-12B ≈ 24 Go,
+Qwen3-8B / Ministral-8B ≈ 16 Go, Qwen3-4B / Gemma3-4B / Phi-4-mini ≈ 8 Go, SmolLM3-3B ≈ 6 Go,
+NuExtract-2B ≈ 4 Go, Qwen3-1.7B ≈ 3,5 Go, Qwen3-0.6B ≈ 1,2 Go, GLiNER ≈ 0,5 Go
+→ **~145 Go de poids**, + cache HF, + environnement (torch/vLLM/CUDA ~15 Go).
 
 **VRAM GPU : minimum 80 Go (A100 80G / H100 80G).** Les modèles sont chargés **un seul à la
 fois**, donc c'est le plus gros (Mistral-Small-24B ≈ 48 Go de poids + cache KV à
-`gpu_memory_utilization=0.90`) qui fixe la borne. Sur un GPU 48 Go (A6000/L40S), tout passe
-**sauf** Mistral-Small-24B en bf16 : soit on le retire de `MODELS`, soit on le charge quantifié.
+`gpu_memory_utilization=0.90`) qui fixe la borne ; Gemma3-12B et Qwen3-8B passent largement.
+Sur un GPU 48 Go (A6000/L40S), tout passe **sauf** Mistral-Small-24B en bf16 : soit on le retire
+de `MODELS`, soit on le charge quantifié. **`Gemma3-12B` est gated** (même licence que Gemma3-4B).
 
-### Modèles (IDs vérifiés sur HuggingFace le 2026-06-15)
+### Modèles (IDs vérifiés sur HuggingFace, 2026-06-16)
 
-LLM généralistes : `Qwen3-4B`, `Qwen3-1.7B`, `Qwen3-0.6B`, `Gemma3-4B`, `Phi-4-mini`,
-`Ministral-8B`, `Mistral-Small-24B`, `SmolLM3-3B`. Baselines : `NuExtract-2.0`, `GLiNER-large`.
+LLM généralistes (10) : `Qwen3-8B`, `Qwen3-4B`, `Qwen3-1.7B`, `Qwen3-0.6B`, `Gemma3-12B`,
+`Gemma3-4B`, `Phi-4-mini`, `Ministral-8B`, `Mistral-Small-24B`, `SmolLM3-3B`.
+Baselines : `NuExtract-2.0`, `GLiNER-large`.
 
-Corrections notables : la série « Qwen3.5 » **n'existe pas** (bonne famille = Qwen3, MAJ 2507) ;
+Corrections notables : la série « Qwen3.5 » **n'existe pas** (bonne famille = Qwen3) ;
 `Ministral-3B` n'est **pas publié** sur HF → on retient `Ministral-8B-Instruct-2410`.
-`google/gemma-3-4b-it` et les modèles Mistral sont **gated** (accepter la licence / token HF).
+Les deux **Gemma3** (`-4b-it`, `-12b-it`) et les modèles **Mistral** sont **gated**
+(accepter la licence + token HF avec accès aux repos gated).
 
 ## Baselines — portée limitée
 
@@ -134,6 +137,33 @@ comme phrase dans le span (frontières de mots), puis correspondance approchée 
 NuExtract reçoit en plus le monde fermé **directement** via un template à enums
 (`product`/`unit`/`direction` = listes de valeurs, `targets` = multi-label) ; `entity` reste libre
 pour pouvoir détecter les `unknown_terms`. GLiNER reste zero-shot pur (labels de type d'entité).
+
+## Optimisations appliquées (v2 — relancer pour en bénéficier)
+
+Suite à l'analyse des erreurs (`results/analyse.md`, run v1), corrections visant l'`exact_match` :
+
+**Déterministes (code, gain garanti tous modèles)** — dans `schema.flat_to_canonical` :
+- `value` des variations ⇒ **magnitude `|value|`** (corrige le « double signe » `-15`+`decrease` :
+  Ministral, Phi-4, Qwen3-4B…).
+- `intent=other` ⇒ **`unknown_terms=[]`** forcé (corrige les fuites sur « other » : Mistral ×3,
+  Phi-4 ×4, Qwen ×1, Ministral ×1).
+
+**Prompt (`prompt_builder.RULES`)** — 7 règles critiques ciblant : signe de `value`, couplage
+`bps→absolute` / `%→relative` (+ exception niveau-cible inverse), `targets` = KPIs cités uniquement
+(pas d'ajout de `marge_interet`), marge_nette vs marge_interet, terme inconnu jamais forcé sur une
+clé, inverse = lever+goal+target obligatoires, `other` n'extrait rien.
+
+**Few-shot** — 7 exemples (2 ajoutés) : un inverse à `goal` *relatif* (vs FS2 niveau absolu) et un
+« other » piège citant un KPI (question de définition).
+
+**Baselines** — assembleur `common.finalize_baseline` : dérive `intent`/`mode`
+(contenu ⇒ forward, vide ⇒ other) → les baselines matchent désormais **forward + other** (0 → 6+
+sur les seuls « other », vérifié) ; garde-fous (driver = clé de levier valide, target = clé KPI) ;
+`value` ⇒ magnitude. NuExtract : template `value` typé **`number`** (corrige le `value:null`
+systématique). Le mode **inverse** reste hors-portée des baselines.
+
+> Ces changements n'affectent pas la validité : dataset 56 ex. 100 % valides, 7 few-shot valides,
+> tout compile. **Relance `run_all.py` puis `score.py`** pour obtenir les scores v2.
 
 ## Métriques (par modèle, dans `results/summary.csv`)
 

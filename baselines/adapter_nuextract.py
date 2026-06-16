@@ -12,19 +12,19 @@ import time
 import torch
 
 from closed_world import KPIS, PRODUITS
-from common import (empty_prediction, normalize_direction, normalize_unit,
-                    to_float, type_from_unit, write_jsonl)
+from common import (empty_prediction, finalize_baseline, normalize_direction,
+                    normalize_unit, to_float, type_from_unit, write_jsonl)
 from synonym_lookup import match
 
 MODEL_ID = "numind/NuExtract-2.0-2B"
 
-# Enums = monde fermé donné au modèle. entity/value restent libres ("verbatim-string")
-# pour pouvoir capter les termes hors-périmètre (→ unknown_terms).
+# Enums = monde fermé donné au modèle. entity reste libre ("verbatim-string") pour capter les
+# termes hors-périmètre (→ unknown_terms) ; value est typée "number" (sinon NuExtract renvoie null).
 TEMPLATE = {
     "product": PRODUITS,                                  # enum exclusif
     "drivers": [{
         "entity": "verbatim-string",
-        "value": "verbatim-string",
+        "value": "number",
         "unit": ["bps", "%"],                             # enum exclusif
         "direction": ["increase", "decrease"],            # enum exclusif
     }],
@@ -76,7 +76,7 @@ def postprocess(extracted: dict) -> dict:
 
     pred["targets"] = sorted(set(pred["targets"]))
     pred["unknown_terms"] = sorted(set(unknown))
-    return pred
+    return finalize_baseline(pred)
 
 
 def _load():

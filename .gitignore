@@ -10,3 +10,4 @@ venv/
 hf_cache/
 *.safetensors
 .DS_Store
+.env

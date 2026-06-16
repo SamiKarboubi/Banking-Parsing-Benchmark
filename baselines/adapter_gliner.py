@@ -8,8 +8,8 @@ import time
 
 import torch
 
-from common import (empty_prediction, normalize_direction, normalize_unit,
-                    to_float, type_from_unit, write_jsonl)
+from common import (empty_prediction, finalize_baseline, normalize_direction,
+                    normalize_unit, to_float, type_from_unit, write_jsonl)
 from synonym_lookup import match
 
 MODEL_ID = "urchade/gliner_multi-v2.1"
@@ -90,7 +90,7 @@ def postprocess(text: str, spans: list) -> dict:
 
     pred["targets"] = sorted(set(pred["targets"]))
     pred["unknown_terms"] = sorted(set(unknown))
-    return pred
+    return finalize_baseline(pred)
 
 
 def _load():

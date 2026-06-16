@@ -82,10 +82,25 @@ class FlatOutput(BaseModel):
     unknown_terms: List[str] = Field(default_factory=list)
 
 
+def _canon_change(change):
+    """Canonicalise une variation : value = magnitude (le signe est porté par direction)."""
+    if not isinstance(change, dict):
+        return change
+    v = change.get("value")
+    if isinstance(v, (int, float)):
+        change = dict(change, value=abs(v))
+    return change
+
+
 def flat_to_canonical(d: dict) -> dict:
-    """Réduit un dict (issu du schéma plat) à la branche canonique attendue."""
+    """Réduit un dict (issu du schéma plat) à la branche canonique attendue.
+
+    Canonicalisations déterministes (alignées sur la convention du gold) :
+      - value des variations = valeur absolue (direction porte le signe) ;
+      - intent=other ⇒ unknown_terms=[] (un 'other' n'extrait rien).
+    """
     if d.get("intent") == "other":
-        return {"intent": "other", "unknown_terms": [t.lower() for t in d.get("unknown_terms") or []]}
+        return {"intent": "other", "unknown_terms": []}
     out = {
         "intent": "simulation",
         "mode": d.get("mode"),
@@ -93,11 +108,15 @@ def flat_to_canonical(d: dict) -> dict:
         "unknown_terms": [t.lower() for t in d.get("unknown_terms") or []],
     }
     if d.get("mode") == "forward":
-        out["drivers"] = d.get("drivers") or []
+        drivers = []
+        for drv in d.get("drivers") or []:
+            if isinstance(drv, dict):
+                drivers.append(dict(drv, change=_canon_change(drv.get("change"))))
+        out["drivers"] = drivers
         out["targets"] = d.get("targets") or []
     elif d.get("mode") == "inverse":
         out["lever"] = d.get("lever")
-        out["goal"] = d.get("goal")
+        out["goal"] = _canon_change(d.get("goal"))
         out["target"] = d.get("target")
     return out
 

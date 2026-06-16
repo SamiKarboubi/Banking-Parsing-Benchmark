@@ -93,8 +93,9 @@ def main():
 
     if not base.empty:
         print("\n=== BASELINES (extraction spécialisée) ===")
-        print("NB : intent & mode sont HORS-PORTEE des baselines (toujours null) -> ces colonnes")
-        print("     sont structurellement a 0 ; comparer surtout product_id / drivers / targets.")
+        print("NB : les baselines DERIVENT intent/mode (forward si contenu, other sinon) mais ne")
+        print("     gerent PAS le mode inverse (pas de lever/goal extraits) -> les 10 inverses")
+        print("     restent non-matchables. Comparer surtout forward / other / product_id.")
         print(base[cols].to_string(index=False, float_format=fmt))
 
     print(f"\nDétails complets -> {os.path.join(RES_DIR, 'summary.csv')}")

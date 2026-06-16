@@ -36,4 +36,17 @@ FEW_SHOTS = [
         "Bonjour, peux-tu m'aider ?",
         {"intent": "other", "unknown_terms": []},
     ),
+    # Inverse avec goal RELATIF (un CHANGE cible "en hausse de X %") — à opposer à FS2 (niveau cible absolu).
+    (
+        "De combien relever les commissions du crédit immobilier pour un PNB en hausse de 8 % ?",
+        {"intent": "simulation", "mode": "inverse", "product_id": "CRED_IMMO",
+         "lever": {"entity_key": "commissions"},
+         "goal": {"type": "relative", "value": 8, "unit": "%", "direction": "increase"},
+         "target": "pnb", "unknown_terms": []},
+    ),
+    # "other" piège : la phrase cite un KPI mais c'est une question de définition → rien n'est extrait.
+    (
+        "Peux-tu m'expliquer ce qu'est le PNB ?",
+        {"intent": "other", "unknown_terms": []},
+    ),
 ]
