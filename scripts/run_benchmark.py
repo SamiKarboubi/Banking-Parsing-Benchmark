@@ -33,6 +33,24 @@ def load_dataset():
     return rows
 
 
+def _purge_hf_cache(hf_id):
+    """Supprime les poids d'un modèle du cache HF (si BENCH_PURGE_CACHE=1).
+
+    Permet de tenir sur un petit disque : le pic ≈ le plus gros modèle au lieu de la somme.
+    """
+    if os.environ.get("BENCH_PURGE_CACHE") != "1":
+        return
+    import shutil
+    try:
+        from huggingface_hub.constants import HF_HUB_CACHE
+    except Exception:
+        HF_HUB_CACHE = os.path.join(os.environ.get("HF_HOME", os.path.expanduser("~/.cache/huggingface")), "hub")
+    path = os.path.join(HF_HUB_CACHE, "models--" + hf_id.replace("/", "--"))
+    if os.path.isdir(path):
+        shutil.rmtree(path, ignore_errors=True)
+        print(f"cache purgé : {path}")
+
+
 def run_model(display_name, hf_id, rows):
     print(f"\n=== {display_name} ({hf_id}) ===")
     llm = inference.load_model(hf_id)
@@ -41,6 +59,7 @@ def run_model(display_name, hf_id, rows):
         results = inference.generate(llm, messages_list)
     finally:
         inference.free_model(llm)
+        _purge_hf_cache(hf_id)
 
     out_path = os.path.join(OUT_DIR, f"{display_name}.jsonl")
     with open(out_path, "w", encoding="utf-8") as f:

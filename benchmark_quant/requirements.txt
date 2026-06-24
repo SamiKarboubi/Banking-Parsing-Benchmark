@@ -1,0 +1,24 @@
+# Benchmark de quantification — dépendances.
+# NB : Gemma 4 et Qwen3.6 sont des modèles 2026 -> il FAUT un vLLM et un transformers récents
+# (plus récents que les bornes du benchmark principal). On installe les versions à jour.
+
+vllm>=0.12                 # support Gemma 4 / Qwen3.6 (archi BF16 via vLLM)
+transformers>=4.57         # tokenizers + chat templates Gemma 4 / Qwen3.6
+
+pydantic>=2.6,<3
+pandas>=2.2
+numpy>=1.26
+
+accelerate>=1.0
+sentencepiece>=0.2
+mistral_common>=1.5        # tokenizer Mistral / Ministral
+
+huggingface_hub>=0.26
+hf_transfer
+
+# Moteur GGUF (runs Q8 / Q4). Préférer une roue CUDA pré-compilée (voir README) :
+#   pip install llama-cpp-python \
+#     --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu124
+# À défaut, compilation locale avec CUDA :
+#   CMAKE_ARGS="-DGGML_CUDA=on" pip install llama-cpp-python
+llama-cpp-python>=0.3.2

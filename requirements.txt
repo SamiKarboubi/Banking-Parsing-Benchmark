@@ -19,3 +19,7 @@ mistral_common>=1.5      # tokenizer Mistral / Ministral
 
 # Baseline NER
 gliner>=0.2.13           # urchade/gliner_multi-v2.1
+
+
+hf_transfer
+huggingface_hub

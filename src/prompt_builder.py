@@ -18,7 +18,9 @@ RULES = """
    "marge" seule, sans qualificatif -> ne devine pas (laisse hors targets).
 5. Un terme qui ressemble à un levier/produit/KPI mais ABSENT du monde fermé va dans
    unknown_terms (en minuscules). Ne le force JAMAIS sur une clé valide. Ex: "livret A",
-   "assurance emprunteur", "taux de la BCE" -> unknown_terms.
+   "assurance emprunteur", "taux de la BCE", "taux de la Fed", "ratio CET1" -> unknown_terms.
+   Si le SEUL élément moteur de la phrase est un tel terme inconnu, alors drivers=[] (forward)
+   et le terme va dans unknown_terms (le produit et les targets cités restent, eux, renseignés).
 6. mode "inverse" : remplis TOUJOURS lever, goal ET target (jamais null).
 7. intent "other" (salutation, question générale, définition, hors-simulation) :
    sortie EXACTEMENT {"intent":"other","unknown_terms":[]}. N'extrais rien, même si la phrase

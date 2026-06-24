@@ -32,6 +32,22 @@ FEW_SHOTS = [
              {"entity_key": "DAT", "change": {"type": "absolute", "value": 30, "unit": "bps", "direction": "increase"}}],
          "targets": [], "unknown_terms": []},
     ),
+    # Source vs driver : "coût des fonds propres" -> cout_capital (driver) ; "fonds propres" -> FP (source).
+    (
+        "Sur le crédit PME, le coût des fonds propres augmente de 20 bps et les fonds propres se "
+        "renchérissent de 10 bps. Impact sur la marge nette ?",
+        {"intent": "simulation", "mode": "forward", "product_id": "CRED_PME",
+         "drivers": [
+             {"entity_key": "cout_capital", "change": {"type": "absolute", "value": 20, "unit": "bps", "direction": "increase"}},
+             {"entity_key": "FP", "change": {"type": "absolute", "value": 10, "unit": "bps", "direction": "increase"}}],
+         "targets": ["marge_nette"], "unknown_terms": []},
+    ),
+    # Terme inconnu SEUL moteur de la phrase : drivers=[] et le terme va dans unknown_terms.
+    (
+        "Pour le crédit immobilier, si le taux de l'OAT augmente de 25 bps, quel impact sur la marge nette ?",
+        {"intent": "simulation", "mode": "forward", "product_id": "CRED_IMMO",
+         "drivers": [], "targets": ["marge_nette"], "unknown_terms": ["taux de l'oat"]},
+    ),
     (
         "Bonjour, peux-tu m'aider ?",
         {"intent": "other", "unknown_terms": []},

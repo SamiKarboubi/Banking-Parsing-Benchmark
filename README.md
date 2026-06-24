@@ -13,7 +13,7 @@ extraient puis sont mappées vers le schéma via une table de synonymes.
 ├── src/
 │   ├── schema.py           # modèles Pydantic + dérivations (entity_type, needs_clarification)
 │   ├── closed_world.py     # bloc de grounding + enums Python
-│   ├── few_shot.py         # 5 exemples in-context (hors dataset)
+│   ├── few_shot.py         # 9 exemples in-context (hors dataset)
 │   ├── prompt_builder.py   # grounding + few-shot + question
 │   ├── models.py           # IDs HuggingFace (LLM + baselines), vérifiés 2026-06-15
 │   ├── inference.py        # vLLM + guided_json (schéma plat) + latence
@@ -92,6 +92,9 @@ cd /workspace
 git clone <repo> bench && cd bench         # ou upload du dossier
 pip install -r requirements.txt
 huggingface-cli login                       # modèles gated (Gemma3, Ministral, Mistral-Small)
+
+# Disque limité ? Purge le cache HF après chaque modèle (pic ≈ plus gros modèle, pas la somme)
+export BENCH_PURGE_CACHE=1
 
 python scripts/run_all.py                   # ~toutes les inférences
 python scripts/score.py                     # résultats
