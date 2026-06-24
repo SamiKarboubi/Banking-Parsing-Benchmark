@@ -84,10 +84,14 @@ def _download_gguf(gguf_repo, quant):
     du (premier) shard ; llama.cpp recolle automatiquement les shards d'un même dossier."""
     from huggingface_hub import hf_hub_download, list_repo_files
 
+    # Fichiers AUXILIAIRES à ignorer : MTP (draft speculative decoding), mmproj (tour vision),
+    # draft. Ils contiennent parfois le tag de quant (ex. "...-Q8_0-MTP.gguf") sans être le modèle.
+    AUX = ("mmproj", "mtp", "draft")
     files = [f for f in list_repo_files(gguf_repo)
-             if f.endswith(".gguf") and quant in os.path.basename(f)]
+             if f.endswith(".gguf") and quant in os.path.basename(f)
+             and not any(a in f.lower() for a in AUX)]
     if not files:
-        raise FileNotFoundError(f"Aucun fichier *{quant}*.gguf dans {gguf_repo}")
+        raise FileNotFoundError(f"Aucun fichier *{quant}*.gguf (hors MTP/mmproj) dans {gguf_repo}")
 
     # Shards: '<name>-00001-of-00003.gguf'. On télécharge tous les shards du quant choisi.
     chosen = sorted(files)[0]
@@ -103,6 +107,9 @@ def _download_gguf(gguf_repo, quant):
 
 
 def _run_gguf(run, messages_list):
+    # Le chemin GGUF n'utilise transformers QUE pour le tokenizer/chat-template : pas besoin de
+    # torch. On le neutralise (évite tout souci de torch/NCCL) AVANT d'importer transformers.
+    os.environ.setdefault("USE_TORCH", "0")
     from llama_cpp import Llama, LlamaGrammar
     from transformers import AutoTokenizer
 
